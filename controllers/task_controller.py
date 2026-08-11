@@ -5,10 +5,11 @@ from sqlalchemy import select
 
 from dto.task_filter_request_dto import TaskFilterRequestDto
 from dto.task_request_dto import TaskRequestDto
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, aliased, contains_eager, joinedload
 
 from dto.task_response_dto import TaskResponseDto
 from models.base import get_session
+from models.employee import Employee
 from models.task import Task
 from datetime import datetime, timedelta
 
@@ -103,5 +104,22 @@ def delete(
     session.delete(task)
     session.flush()
     return task.id
+
+# @router.get('/e')
+# def get_employee(sesssion: Session = Depends(get_session)):
+#     stmt = (
+#         select(Employee)
+#         .options(joinedload(Employee.supervisor))
+#         .where(Employee.id == 4)
+#     )
+#     e = sesssion.execute(stmt).scalars().one()
+#     return {
+#         e,
+#         e.supervisor
+#     }
+#     # print(e.supervisor_id)
+#     # print(e.supervisor.last_name)
+
+
 
     

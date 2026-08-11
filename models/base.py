@@ -7,7 +7,7 @@ load_dotenv()
 class Base(DeclarativeBase):
     pass
 
-engine = create_engine(url=os.getenv('DB_URL'))
+engine = create_engine(url=os.getenv('DB_URL'), echo=True)
 session_maker = sessionmaker(bind=engine)
 
 def get_session():
