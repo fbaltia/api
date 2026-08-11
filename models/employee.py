@@ -29,6 +29,6 @@ class Employee(Base):
     supervisor_id: Mapped[Optional[int]] = mapped_column(ForeignKey('employees.id'), nullable=True)
     supervisor: Mapped[Optional[Employee]] = relationship(remote_side=[id])
     # supervisor: Mapped[Optional[Employee]] = relationship(back_populates='subordinates', remote_side=[id])
-    subordinates: Mapped[list[Employee]] = relationship(back_populates='supervisor')
+    # subordinates: Mapped[list[Employee]] = relationship(back_populates='supervisor')
 
     tasks: Mapped[list[Task]] = relationship(back_populates='assign_to')
