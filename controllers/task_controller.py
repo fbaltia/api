@@ -26,6 +26,7 @@ async def create(
 ):
     task = Task()
     task.name = dto.name
+    # modifier ici
     task.attribution_email = dto.attribution_email
     task.end_date = datetime.now() + timedelta(days=dto.duration)
     session.add(task)
@@ -95,7 +96,7 @@ def delete(
     background_tasks.add_task(
         mailer.send_message,
         'Tâche supprimée',
-        [task.attribution_email],
+        [task.attribution_email], # modifier ici 
         task.__dict__,
         'task_removed.html'
     )
