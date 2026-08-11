@@ -1,15 +1,16 @@
 import os
 from pathlib import Path
+
 from dotenv import load_dotenv
-from fastapi_mail import FastMail, ConnectionConfig, MessageSchema
+from fastapi_mail import ConnectionConfig, FastMail, MessageSchema
 
 load_dotenv()
 
-class Mailer():
+class Mailer:
     config = ConnectionConfig(
-        MAIL_SERVER=os.getenv('SMTP_HOST'),
-        MAIL_PORT=int(os.getenv('SMTP_PORT')),
-        MAIL_USERNAME=os.getenv('SMTP_USER'),
+        MAIL_SERVER=os.getenv('SMTP_HOST', ''),
+        MAIL_PORT=int(os.getenv('SMTP_PORT', '25')),
+        MAIL_USERNAME=os.getenv('SMTP_USER', ''),
         MAIL_PASSWORD=os.getenv('SMTP_PASS'),
         MAIL_SSL_TLS=False,
         MAIL_STARTTLS=False,

@@ -1,13 +1,15 @@
+import os
+
+from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
-import os
-from dotenv import load_dotenv
+
 load_dotenv()
 
 class Base(DeclarativeBase):
     pass
 
-engine = create_engine(url=os.getenv('DB_URL'), echo=True)
+engine = create_engine(url=os.getenv('DB_URL', ''), echo=True)
 session_maker = sessionmaker(bind=engine)
 
 def get_session():
@@ -15,9 +17,9 @@ def get_session():
     try: 
         yield session
         session.commit()
-    except Exception as e:
+    except Exception:
         session.rollback()
-        raise e
+        raise
     finally:
         session.close()
     

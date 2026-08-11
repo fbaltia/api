@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Body, Depends, Path, Query
 
 from dto.hello_request_dto import HelloRequestDto
@@ -11,8 +13,8 @@ router = APIRouter(prefix='/default', tags=['Default'])
 def hello(
     # name: str = Query(default='Khun', description='Permet de définir qui sera saluer'), 
     # nb: int = Query(default=1, description='Permet de définir combien de fois')
-    dto: HelloRequestDto = Query(),
-    id: int = Path()
+    dto: Annotated[HelloRequestDto, Query()],
+    id: Annotated[int, Path()]
 ) -> HelloResponseDto:
     """
     Fonction test qui permet de dire bonjour !
@@ -27,8 +29,8 @@ def hello(
 
 @router.post('/mail', status_code=201)
 async def mail(
-    dto: MailRequestDto = Body(),
-    mailer: Mailer = Depends(Mailer)
+    dto: Annotated[MailRequestDto, Body()],
+    mailer: Annotated[Mailer, Depends(Mailer)]
 ) -> None:
     await mailer.send_message(
         dto.subject,

@@ -2,13 +2,14 @@ from __future__ import annotations
 
 from decimal import Decimal
 from enum import StrEnum, auto
-from typing import Optional
+from typing import TYPE_CHECKING
+
+from sqlalchemy import Enum as SqlEnum
+from sqlalchemy import ForeignKey, Numeric
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from models.base import Base
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import ForeignKey, Enum as SqlEnum, Numeric
 
-from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from models.task import Task
 
@@ -26,8 +27,8 @@ class Employee(Base):
     salary: Mapped[Decimal] = mapped_column(Numeric(8,2), nullable=False)
     title: Mapped[Title] = mapped_column(SqlEnum(Title), nullable=False, default=Title.DEV)
 
-    supervisor_id: Mapped[Optional[int]] = mapped_column(ForeignKey('employees.id'), nullable=True)
-    supervisor: Mapped[Optional[Employee]] = relationship(remote_side=[id])
+    supervisor_id: Mapped[int | None] = mapped_column(ForeignKey('employees.id'), nullable=True)
+    supervisor: Mapped[Employee | None] = relationship(remote_side=[id])
     # supervisor: Mapped[Optional[Employee]] = relationship(back_populates='subordinates', remote_side=[id])
     # subordinates: Mapped[list[Employee]] = relationship(back_populates='supervisor')
 
