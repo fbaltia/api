@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
 from fastapi import (
@@ -41,7 +41,7 @@ async def create(
     task = Task(
         name=dto.name,
         assign_to=empl,
-        end_date=datetime.now() + timedelta(days=dto.duration)
+        end_date=datetime.now(timezone.utc) + timedelta(days=dto.duration)
     )
 
     task_repository.add(task)
@@ -81,7 +81,7 @@ def update_status(
     except NoResultFound:
         raise HTTPException(HTTP_404_NOT_FOUND)
     
-    if task.end_date < datetime.now():
+    if task.end_date < datetime.now(timezone.utc):
         raise HTTPException(HTTP_422_UNPROCESSABLE_CONTENT, {
             'message': 'Il n\'est plus possible de modifier cet enregistrement'
         })
