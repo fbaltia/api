@@ -1,6 +1,5 @@
 from datetime import datetime, timedelta
 from typing import Annotated
-from zoneinfo import ZoneInfo
 
 from fastapi import (
     APIRouter,
@@ -42,7 +41,7 @@ async def create(
     task = Task(
         name=dto.name,
         assign_to=empl,
-        end_date=datetime.now(tz=ZoneInfo('Europe/Paris')) + timedelta(days=dto.duration)
+        end_date=datetime.now() + timedelta(days=dto.duration)
     )
 
     task_repository.add(task)
@@ -82,7 +81,7 @@ def update_status(
     except NoResultFound:
         raise HTTPException(HTTP_404_NOT_FOUND)
     
-    if task.end_date < datetime.now(tz=ZoneInfo('Europe/Paris')):
+    if task.end_date < datetime.now():
         raise HTTPException(HTTP_422_UNPROCESSABLE_CONTENT, {
             'message': 'Il n\'est plus possible de modifier cet enregistrement'
         })
