@@ -35,6 +35,6 @@ async def mail(
     await mailer.send_message(
         dto.subject,
         dest=['lykhun@gmail.com'],
-        template_body=dict(dto),
+        template_body=dto.__dict__,
         template_name='mail_template.html'
     )

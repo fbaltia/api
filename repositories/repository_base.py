@@ -27,14 +27,14 @@ class RepositoryBase(ABC, Generic[T]):
         self._session.flush()
         return entity
 
-    def update(self, ident:Any ,**kwargs: Any) -> T:
+    def update(self, ident: Any , **kwargs: Any) -> T:
         entity = self.get_one(ident)
         for field, value in kwargs.items():
             setattr(entity, field, value)
         self._session.flush()
         return entity
 
-    def delete(self, ident:Any) -> T:
+    def delete(self, ident: Any) -> T:
         entity = self.get_one(ident)
         self._session.delete(entity)
         self._session.flush()
