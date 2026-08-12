@@ -1,5 +1,3 @@
-from models.employee import Employee
-
 from datetime import datetime, timedelta
 from typing import Annotated
 from zoneinfo import ZoneInfo
@@ -13,16 +11,16 @@ from fastapi import (
     Path,
     Query,
 )
-from sqlalchemy import Sequence, select
 from sqlalchemy.exc import NoResultFound
-from sqlalchemy.orm import Session
 from starlette.status import *
 
 from dto.task_filter_request_dto import TaskFilterRequestDto
 from dto.task_request_dto import TaskRequestDto
 from dto.task_response_dto import TaskResponseDto
-from models.base import get_session
+from models.employee import Employee
 from models.task import Task
+from repositories.employee_repository import EmployeeRepository
+from repositories.task_repository import TaskRepository
 from services.mailer import Mailer
 
 router = APIRouter(prefix='/tasks', tags=['Tasks'])
@@ -30,46 +28,26 @@ router = APIRouter(prefix='/tasks', tags=['Tasks'])
 @router.post('/', status_code=201)
 async def create(
     background_tasks: BackgroundTasks,
-    dto: Annotated[TaskRequestDto, Body()], 
-    session: Annotated[Session, Depends(get_session)],
+    dto: Annotated[TaskRequestDto, Body()],
+    employee_repository: Annotated[EmployeeRepository, Depends(EmployeeRepository)],
+    task_repository: Annotated[TaskRepository, Depends(TaskRepository)],
     mailer: Annotated[Mailer, Depends(Mailer)]
 ):
-    empl = session.scalars(
-        select(Employee)
-        .where(Employee.email.ilike(dto.attribution_email))
-    ).one_or_none()
-
+    empl = employee_repository.get_by_email(dto.attribution_email)
     if not empl:
         raise HTTPException(HTTP_422_UNPROCESSABLE_CONTENT, 'Employé introuvable')
     if empl.title != Employee.Title.DEV:
         raise HTTPException(HTTP_422_UNPROCESSABLE_CONTENT, 'On ne peut attribué de tâches qu\'aux dev')
 
-    task = Task()
-    task.name = dto.name
-    task.assign_to = empl
-    task.end_date = datetime.now(tz=ZoneInfo('Europe/Paris')) + timedelta(days=dto.duration)
-    session.add(task)
-    # sauver en db sans commit
-    session.flush()
-    # emails = [empl.email]
-    # e = empl
-    # while e.supervisor:
-    #     emails.append(e.supervisor.email)
-    #     e = e.supervisor
-
-    cte_r = (
-        select(Employee).where(Employee.id == empl.id)
-        .cte(recursive=True)
+    task = Task(
+        name=dto.name,
+        assign_to=empl,
+        end_date=datetime.now(tz=ZoneInfo('Europe/Paris')) + timedelta(days=dto.duration)
     )
 
-    recurse_stmt = (
-        select(Employee)
-        .join(cte_r, cte_r.c.supervisor_id == Employee.id)
-    )
+    task_repository.add(task)
 
-    stmt = select(cte_r.union_all(recurse_stmt))
-
-    result: list[Employee] = list(session.scalars(select(Employee).from_statement(stmt)).all())
+    result: list[Employee] = employee_repository.get_hierarchy(empl.id)
 
     emails = [e.email for e in result]
 
@@ -85,30 +63,22 @@ async def create(
 @router.get('/')
 def get(
     dto: Annotated[TaskFilterRequestDto, Query()],
-    session: Annotated[Session, Depends(get_session)]
+    task_repository: Annotated[TaskRepository, Depends(TaskRepository)]
 ) -> list[TaskResponseDto]:
-    stmt = (select(Task)
-        .offset((dto.page - 1) * dto.limit)
-        .limit(dto.limit)
-    )
-    if dto.email:
-        stmt.where(Task.attribution_email == dto.email)
-    if dto.status:
-        stmt.where(Task.status == dto.status)
 
-    tasks = session.execute(stmt).scalars().all()
+    tasks = task_repository.get_by_email_and_status(dto.email, dto.status, dto.limit, dto.page)
+    
     # transforme chaque model db en dto
     return list(map(TaskResponseDto.from_entity, tasks))
-    # return [TaskResponseDto.from_entity(t) for t in tasks]
 
 @router.patch('/{id}')
 def update_status(
     id: Annotated[int, Path()], 
     status: Annotated[Task.Status, Body(...)],
-    session: Annotated[Session, Depends(get_session)],
+    task_repository: Annotated[TaskRepository, Depends(TaskRepository)]
 ):
     try:
-        task = session.get_one(Task, id)
+        task = task_repository.get_one(id)
     except NoResultFound:
         raise HTTPException(HTTP_404_NOT_FOUND)
     
@@ -117,19 +87,18 @@ def update_status(
             'message': 'Il n\'est plus possible de modifier cet enregistrement'
         })
 
-    task.status = status
-    session.flush([task])
+    task_repository.update(id, status=status)
     return task.id
 
 @router.delete('/{id}')
 def delete(
     background_tasks: BackgroundTasks,
     id: Annotated[int, Path()], 
-    session: Annotated[Session, Depends(get_session)],
+    task_repository: Annotated[TaskRepository, Depends(TaskRepository)],
     mailer: Annotated[Mailer, Depends(Mailer)]
 ):
     try:
-        task: Task = session.get_one(Task, id)
+        task = task_repository.get_one(id)
     except NoResultFound:
         raise HTTPException(HTTP_404_NOT_FOUND)
 
@@ -138,6 +107,8 @@ def delete(
             'message': 'Impossible de supprimer une tâche terminée'
         })
 
+    task_repository.delete(id)
+
     background_tasks.add_task(
         mailer.send_message,
         'Tâche supprimée',
@@ -145,24 +116,8 @@ def delete(
         task.__dict__,
         'task_removed.html'
     )
-    session.delete(task)
-    session.flush()
     return task.id
 
-# @router.get('/e')
-# def get_employee(sesssion: Session = Depends(get_session)):
-#     stmt = (
-#         select(Employee)
-#         .options(joinedload(Employee.supervisor))
-#         .where(Employee.id == 4)
-#     )
-#     e = sesssion.execute(stmt).scalars().one()
-#     return {
-#         e,
-#         e.supervisor
-#     }
-#     # print(e.supervisor_id)
-#     # print(e.supervisor.last_name)
 
 
 
