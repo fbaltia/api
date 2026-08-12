@@ -1,12 +1,14 @@
-from fastapi import FastAPI
 import uvicorn
-from controllers import default_controller, task_controller
+from fastapi import FastAPI
+
+import controllers
+from utils.application_utils import load_routers
 
 # créer une instance de FastAPI
 app = FastAPI()
 
-app.include_router(default_controller.router)
-app.include_router(task_controller.router)
+# charger tous les router se trouvant dans controllers
+load_routers(app, controllers)
 
 if __name__ == '__main__':
     # exposer FastAPI sur le port 8000

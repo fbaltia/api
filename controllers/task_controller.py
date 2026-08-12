@@ -1,3 +1,4 @@
+from models.employee import Employee
 
 from datetime import datetime, timedelta
 from typing import Annotated
@@ -12,7 +13,7 @@ from fastapi import (
     Path,
     Query,
 )
-from sqlalchemy import select
+from sqlalchemy import Sequence, select
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import Session
 from starlette.status import *
@@ -33,18 +34,49 @@ async def create(
     session: Annotated[Session, Depends(get_session)],
     mailer: Annotated[Mailer, Depends(Mailer)]
 ):
+    empl = session.scalars(
+        select(Employee)
+        .where(Employee.email.ilike(dto.attribution_email))
+    ).one_or_none()
+
+    if not empl:
+        raise HTTPException(HTTP_422_UNPROCESSABLE_CONTENT, 'Employé introuvable')
+    if empl.title != Employee.Title.DEV:
+        raise HTTPException(HTTP_422_UNPROCESSABLE_CONTENT, 'On ne peut attribué de tâches qu\'aux dev')
+
     task = Task()
     task.name = dto.name
-    # modifier ici
-    task.attribution_email = dto.attribution_email
+    task.assign_to = empl
     task.end_date = datetime.now(tz=ZoneInfo('Europe/Paris')) + timedelta(days=dto.duration)
     session.add(task)
     # sauver en db sans commit
     session.flush()
+    # emails = [empl.email]
+    # e = empl
+    # while e.supervisor:
+    #     emails.append(e.supervisor.email)
+    #     e = e.supervisor
+
+    cte_r = (
+        select(Employee).where(Employee.id == empl.id)
+        .cte(recursive=True)
+    )
+
+    recurse_stmt = (
+        select(Employee)
+        .join(cte_r, cte_r.c.supervisor_id == Employee.id)
+    )
+
+    stmt = select(cte_r.union_all(recurse_stmt))
+
+    result: list[Employee] = list(session.scalars(select(Employee).from_statement(stmt)).all())
+
+    emails = [e.email for e in result]
+
     # envoyer l'email en arrière plan
     background_tasks.add_task(
         mailer.send_message,
-        'Nouvelle tâche', [task.attribution_email],
+        'Nouvelle tâche', emails,
         task.__dict__,
         'new_task.html'
     )
@@ -54,7 +86,7 @@ async def create(
 def get(
     dto: Annotated[TaskFilterRequestDto, Query()],
     session: Annotated[Session, Depends(get_session)]
-) -> map[TaskResponseDto]:
+) -> list[TaskResponseDto]:
     stmt = (select(Task)
         .offset((dto.page - 1) * dto.limit)
         .limit(dto.limit)
@@ -66,7 +98,7 @@ def get(
 
     tasks = session.execute(stmt).scalars().all()
     # transforme chaque model db en dto
-    return map(TaskResponseDto.from_entity, tasks)
+    return list(map(TaskResponseDto.from_entity, tasks))
     # return [TaskResponseDto.from_entity(t) for t in tasks]
 
 @router.patch('/{id}')
