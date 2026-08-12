@@ -53,7 +53,8 @@ async def create(
     # envoyer l'email en arrière plan
     background_tasks.add_task(
         mailer.send_message,
-        'Nouvelle tâche', emails,
+        'Nouvelle tâche', 
+        emails,
         task.__dict__,
         'new_task.html'
     )
