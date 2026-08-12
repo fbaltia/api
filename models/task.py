@@ -4,8 +4,8 @@ from datetime import datetime
 from enum import StrEnum, auto
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, Enum as SqlEnum
-from sqlalchemy import ForeignKey
+from sqlalchemy import DateTime, ForeignKey
+from sqlalchemy import Enum as SqlEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from models.base import Base
