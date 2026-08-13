@@ -1,6 +1,9 @@
+import asyncio
+import json
 from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, Path, Query
+from fastapi.responses import StreamingResponse
 
 from dto.hello_request_dto import HelloRequestDto
 from dto.hello_response_dto import HelloResponseDto
@@ -37,4 +40,20 @@ async def mail(
         dest=['lykhun@gmail.com'],
         template_body=dto.__dict__,
         template_name='mail_template.html'
+    )
+
+async def generate_flow():
+    yield json.dumps({ 'value': 'Coucou' }) + '\n'
+    await asyncio.sleep(2)
+    yield json.dumps({ 'value': 'Coucou, Comment ' }) + '\n'
+    await asyncio.sleep(2)
+    yield json.dumps({ 'value': 'Coucou, Comment ca' }) + '\n'
+    await asyncio.sleep(2)
+    yield json.dumps({ 'value': 'Coucou, Comment ca?' }) + '\n'
+
+@router.get('/stream')
+def get_stream():
+    return StreamingResponse(
+        content=generate_flow(),
+        media_type='application/x-ndjson'
     )
