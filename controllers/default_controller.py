@@ -49,7 +49,7 @@ async def generate_flow():
     await asyncio.sleep(2)
     yield json.dumps({ 'value': 'Coucou, Comment ca' }) + '\n'
     await asyncio.sleep(2)
-    yield json.dumps({ 'value': 'Coucou, Comment ca?' }) + '\n'
+    yield json.dumps({ 'value': 'Coucou, Comment ca va?' }) + '\n'
 
 @router.get('/stream')
 def get_stream():
