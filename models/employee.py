@@ -26,10 +26,11 @@ class Employee(Base):
     email: Mapped[str] = mapped_column(nullable=False, unique=True)
     salary: Mapped[Decimal] = mapped_column(Numeric(8,2), nullable=False)
     title: Mapped[Title] = mapped_column(SqlEnum(Title), nullable=False, default=Title.DEV)
+    photo: Mapped[str|None] = mapped_column()
 
     supervisor_id: Mapped[int | None] = mapped_column(ForeignKey('employees.id'), nullable=True)
-    supervisor: Mapped[Employee | None] = relationship(remote_side=[id])
-    # supervisor: Mapped[Optional[Employee]] = relationship(back_populates='subordinates', remote_side=[id])
-    # subordinates: Mapped[list[Employee]] = relationship(back_populates='supervisor')
+    # supervisor: Mapped[Employee | None] = relationship(remote_side=[id])
+    supervisor: Mapped[Employee|None] = relationship(back_populates='subordinates', remote_side=[id])
+    subordinates: Mapped[list[Employee]] = relationship(back_populates='supervisor')
 
     tasks: Mapped[list[Task]] = relationship(back_populates='assign_to')

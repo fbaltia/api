@@ -1,11 +1,13 @@
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, staticfiles
 
 import controllers
 from utils.application_utils import load_routers
 
 # créer une instance de FastAPI
 app = FastAPI()
+
+app.mount('/public', staticfiles.StaticFiles(directory='static'))
 
 # charger tous les router se trouvant dans controllers
 load_routers(app, controllers)

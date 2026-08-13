@@ -26,7 +26,7 @@ class TaskResponseDto:
             status=task.status,
             start_date=task.start_date, 
             end_date=task.end_date,
-            attribution_email=task.attribution_email, # modifier ici
+            attribution_email=task.assign_to.email, # modifier ici
             duration=(task.end_date - task.start_date).days,
         )
         

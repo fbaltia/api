@@ -39,3 +39,6 @@ class RepositoryBase(ABC, Generic[T]):
         self._session.delete(entity)
         self._session.flush()
         return entity
+
+    def flush(self):
+       self._session.flush() 
